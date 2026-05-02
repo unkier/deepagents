@@ -2349,6 +2349,19 @@ def create_model(
     if extra_kwargs:
         kwargs.update(extra_kwargs)
 
+    # Gated on LANGFUSE_PUBLIC_KEY so `langfuse` stays an optional dependency.
+    if os.environ.get("LANGFUSE_PUBLIC_KEY"):
+        try:
+            from langfuse.langchain import CallbackHandler
+
+            existing = kwargs.get("callbacks") or []
+            kwargs["callbacks"] = [*existing, CallbackHandler()]
+        except ImportError:
+            logger.warning(
+                "LANGFUSE_PUBLIC_KEY is set but `langfuse` is not installed; "
+                "skipping Langfuse callback."
+            )
+
     # Check if this provider uses a custom BaseChatModel class
     config = ModelConfig.load()
     class_path = config.get_class_path(provider) if provider else None
